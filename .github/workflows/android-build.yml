@@ -1,0 +1,47 @@
+name: Android Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android
+
+      - name: Install Dependencies
+        run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386
+
+      - name: Install Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          local-cache: true
+
+      - name: Set up Cargo for Android
+        run: |
+          cargo install cargo-apk
+          rustup target add aarch64-linux-android
+
+      - name: Build APK
+        run: cargo apk build --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: android-apk
+          path: target/aarch64-linux-android/release/apk
+
