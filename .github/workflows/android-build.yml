@@ -49,8 +49,11 @@ jobs:
           cargo install cargo-apk --force
           rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
 
-      - name: Build APK
-        run: cargo apk build --release
+      - name: Clean Previous Builds
+        run: cargo clean
+
+      - name: Build APK with Debugging
+        run: RUST_BACKTRACE=1 cargo apk build --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
