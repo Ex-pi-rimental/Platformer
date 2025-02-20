@@ -11,3 +11,7 @@ opt-level = "z"
 
 [lib]
 crate-type = ["cdylib"]
+
+[[bin]]
+name = "my_bevy_platformer"
+path = "src/main.rs"
