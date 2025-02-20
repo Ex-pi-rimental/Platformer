@@ -3,10 +3,10 @@ name: Android Build
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -23,18 +23,18 @@ jobs:
           targets: aarch64-linux-android
 
       - name: Install Dependencies
-        run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386
+        run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386 android-sdk-platform-tools
 
       - name: Install Android SDK & Platform Tools
         run: |
-          export ANDROID_SDK_ROOT=$HOME/android-sdk
-          mkdir -p $ANDROID_SDK_ROOT/cmdline-tools/latest/bin
+          mkdir -p $HOME/android-sdk/cmdline-tools/latest/bin
           curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip sdk-tools.zip -d $ANDROID_SDK_ROOT/cmdline-tools
-          mv $ANDROID_SDK_ROOT/cmdline-tools/cmdline-tools $ANDROID_SDK_ROOT/cmdline-tools/latest
-          export PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$PATH
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3"
+          unzip sdk-tools.zip -d $HOME/android-sdk/cmdline-tools
+          mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
+          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
+          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3"
 
       - name: Install Android NDK
         uses: nttld/setup-ndk@v1
@@ -55,4 +55,3 @@ jobs:
         with:
           name: android-apk
           path: target/aarch64-linux-android/release/apk
-
