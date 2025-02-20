@@ -20,7 +20,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android
 
       - name: Install Dependencies
         run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386 android-sdk-platform-tools
@@ -32,27 +32,26 @@ jobs:
           unzip sdk-tools.zip -d $HOME/android-sdk/cmdline-tools
           mv $HOME/android-sdk/cmdline-tools/cmdline-tools/* $HOME/android-sdk/cmdline-tools/latest/
           rm -rf $HOME/android-sdk/cmdline-tools/cmdline-tools
-          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
           echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
           yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3"
+          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3" "ndk;25.2.9519653"
 
-      - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r25c
-          local-cache: true
-
-      - name: Set up Cargo for Android
+      - name: Set up NDK
         run: |
-          cargo install cargo-apk
-          rustup target add aarch64-linux-android
+          echo "NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
+      - name: Install Cargo APK
+        run: |
+          cargo install cargo-apk --force
+          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
 
       - name: Build APK
-        run: cargo apk build --release
+        run: cargo apk build --release --verbose
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: target/aarch64-linux-android/release/apk
+          path: target/aarch64-linux-android/release/apk/*.apk
