@@ -38,7 +38,7 @@ jobs:
       - name: Build APK
         run: |
           source "$HOME/.cargo/env"
-          cargo apk build -p [crate] --release --lib
+          cargo apk build -p my_bevy_platformer --release --lib
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
