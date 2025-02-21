@@ -1,4 +1,4 @@
-name: Android Build
+name: Rust Android Build
 
 on:
   push:
@@ -10,53 +10,38 @@ on:
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source "$HOME/.cargo/env"
 
       - name: Install Dependencies
-        run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386 android-sdk-platform-tools
-
-      - name: Install Android SDK & Platform Tools
         run: |
-          mkdir -p $HOME/android-sdk/cmdline-tools/latest
-          curl -o sdk-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
-          unzip sdk-tools.zip -d $HOME/android-sdk/cmdline-tools
-          mv $HOME/android-sdk/cmdline-tools/cmdline-tools/* $HOME/android-sdk/cmdline-tools/latest/
-          rm -rf $HOME/android-sdk/cmdline-tools/cmdline-tools
+          sudo apt update
+          sudo apt install -y openjdk-17-jdk squashfs-tools android-sdk adb
+          cargo install xbuild cargo-apk
+          rustup target add aarch64-linux-android armv7-linux-androideabi wasm32-unknown-unknown
+
+      - name: Set up Android SDK & NDK
+        run: |
           echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "ANDROID_SDK_ROOT=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "$HOME/android-sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
-          yes | $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager "platforms;android-30" "build-tools;30.0.3" "ndk;25.2.9519653"
-          $HOME/android-sdk/cmdline-tools/latest/bin/sdkmanager --list | grep "platforms;android-30"
+          echo "NDK_HOME=$HOME/android-sdk/ndk/26.2.11394342" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+          echo "PATH=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
 
-      - name: Set up NDK
+      - name: Build APK
         run: |
-          echo "NDK_HOME=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
-          echo "$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
-
-      - name: Install Cargo APK
-        run: |
-          cargo install cargo-apk --force
-          rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android
-
-      - name: Clean Previous Builds
-        run: cargo clean
-
-      - name: Build APK with Debugging
-        run: RUST_BACKTRACE=1 cargo apk build --release
+          source "$HOME/.cargo/env"
+          cargo apk build -p [crate] --release --lib
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: target/aarch64-linux-android/release/apk/*.apk
+          path: target/aarch64-linux-android/release/*.apk
