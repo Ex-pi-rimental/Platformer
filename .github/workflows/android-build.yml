@@ -1,47 +1,47 @@
-name: Android Build
+name: Rust Android Build
 
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-linux-android
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source "$HOME/.cargo/env"
 
       - name: Install Dependencies
-        run: sudo apt update && sudo apt install -y cmake make python3 unzip clang libc6-dev-i386
-
-      - name: Install Android NDK
-        uses: nttld/setup-ndk@v1
-        with:
-          ndk-version: r25c
-          local-cache: true
-
-      - name: Set up Cargo for Android
         run: |
-          cargo install cargo-apk
-          rustup target add aarch64-linux-android
+          sudo apt update
+          sudo apt install -y openjdk-17-jdk squashfs-tools android-sdk adb
+          cargo install xbuild cargo-apk
+          rustup target add aarch64-linux-android armv7-linux-androideabi wasm32-unknown-unknown
+
+      - name: Set up Android SDK & NDK
+        run: |
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "NDK_HOME=$HOME/android-sdk/ndk/26.2.11394342" >> $GITHUB_ENV
+          echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
+          echo "PATH=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
 
       - name: Build APK
-        run: cargo apk build --release
+        run: |
+          source "$HOME/.cargo/env"
+          cargo apk build -p [crate] --release --lib
 
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: target/aarch64-linux-android/release/apk
-
+          path: target/aarch64-linux-android/release/*.apk
