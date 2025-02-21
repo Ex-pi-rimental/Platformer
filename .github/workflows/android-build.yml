@@ -28,16 +28,18 @@ jobs:
           cargo install xbuild cargo-apk
           rustup target add aarch64-linux-android armv7-linux-androideabi wasm32-unknown-unknown
 
-      - name: Set up Android SDK & NDK
+      - name: Install Android Command Line Tools
         run: |
-          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
-          echo "NDK_HOME=$HOME/android-sdk/ndk/26.2.11394342" >> $GITHUB_ENV
+          mkdir -p $ANDROID_HOME/cmdline-tools
+          curl -o commandlinetools.zip https://dl.google.com/android/repository/commandlinetools-linux-10406996_latest.zip
+          unzip commandlinetools.zip -d $ANDROID_HOME/cmdline-tools
+          mv $ANDROID_HOME/cmdline-tools/cmdline-tools $ANDROID_HOME/cmdline-tools/latest
+          rm commandlinetools.zip
           echo "PATH=$ANDROID_HOME/cmdline-tools/latest/bin:$PATH" >> $GITHUB_ENV
-          echo "PATH=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH" >> $GITHUB_ENV
-      
+
       - name: Install Android SDK Platform 31
         run: |
-          yes | sdkmanager "platforms;android-31" "build-tools;31.0.0" --sdk_root=$ANDROID_HOME
+          sdkmanager --sdk_root=$ANDROID_HOME --install "platforms;android-31" "build-tools;31.0.0"
 
       - name: Build APK
         run: |
