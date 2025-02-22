@@ -220,7 +220,7 @@ fn setup(
 
 fn update_scoreboard(scoreboard: Res<Scoreboard>, mut query: Query<&mut Text, With<ScoreboardUi>>) {
     let mut text = query.single_mut();
-    text.sections[1].value = scoreboard.score.to_string();
+    text.get_mut(1).unwrap().value = scoreboard.score.to_string();
 }
 
 #[derive(Resource)]
